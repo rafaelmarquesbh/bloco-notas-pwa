@@ -3,9 +3,9 @@ let current = null;
 let dirty = false;
 let syncing = false;
 
-const CACHE_KEY = "minhas_notas_cache_v7";
-const QUEUE_KEY = "minhas_notas_queue_v7";
-const DEVICE_KEY = "minhas_notas_device_v7";
+const CACHE_KEY = "minhas_notas_cache_v8";
+const QUEUE_KEY = "minhas_notas_queue_v8";
+const DEVICE_KEY = "minhas_notas_device_v8";
 
 const $ = (id) => document.getElementById(id);
 
@@ -39,6 +39,7 @@ const sectionTitleEl = $("sectionTitle");
 const connectionEl = $("connection");
 const connectionTextEl = connectionEl?.querySelector(".connection-text");
 const syncTimeEl = $("syncTime");
+const syncCloudEl = connectionEl?.querySelector(".sync-cloud");
 
 const hasSupabase = () => typeof supabaseClient !== "undefined";
 
@@ -102,12 +103,18 @@ function queueReorder() {
 }
 
 function updateSyncTime(value) {
-  if (!syncTimeEl) return;
-  if (!value) { syncTimeEl.textContent = ""; return; }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return;
-  syncTimeEl.textContent = `Sincr. ${date.toLocaleDateString("pt-BR", {day:"2-digit", month:"2-digit"})} ${date.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})}`;
+  // Mantido por compatibilidade com versões anteriores.
+  // Data/hora não são mais exibidas na interface.
 }
+
+function animateSyncIcon() {
+  if (!syncCloudEl) return;
+  syncCloudEl.classList.remove("sync-burst");
+  void syncCloudEl.offsetWidth;
+  syncCloudEl.classList.add("sync-burst");
+  window.setTimeout(() => syncCloudEl.classList.remove("sync-burst"), 900);
+}
+
 
 function updateConnectionStatus() {
   const offline = !navigator.onLine;
@@ -125,12 +132,12 @@ function updateConnectionStatus() {
     label = `Online — ${pending} aguardando sincronização`;
     state = "pending";
   } else {
-    label = "Online — sincronizado";
+    label = "Sincronizado";
     state = "online";
   }
   connectionEl.className = `connection ${state}`;
   if (connectionTextEl) connectionTextEl.textContent = label;
-  if (state === "online" && !syncTimeEl?.textContent) updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
+  if (syncCloudEl) syncCloudEl.setAttribute("aria-label", state === "online" ? "Sincronizado" : "Sincronização");
 }
 
 function makeLocalId() {
@@ -313,7 +320,7 @@ async function loadNotes(fromOnlineEvent = false) {
     notes.sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0));
     writeCache();
     localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
-    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
+    animateSyncIcon();
     render();
     updateConnectionStatus();
 
@@ -575,7 +582,7 @@ async function saveNote() {
     dirty = false;
     writeCache();
     localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
-    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
+    animateSyncIcon();
     removeQueueForId(localId);
     render();
     statusEl.textContent = "Salvo ✓";
@@ -694,7 +701,7 @@ async function syncPending() {
 
     writeCache();
     localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
-    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
+    animateSyncIcon();
   } catch (error) {
     console.error("Sincronização pendente:", error);
   } finally {
