@@ -265,3 +265,32 @@ html,body{max-width:100%;overflow-x:hidden}
   .grid article{height:auto!important;min-height:140px!important;overflow:visible!important;}
   .grid article .body{max-height:none!important;overflow:visible!important;}
 }
+
+
+/* V17 - limite visual dos cartões, inspirado no Google Keep */
+.grid article{
+  height:260px!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.grid article .body{
+  flex:1 1 auto;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+@media(max-width:700px){
+  .grid article{
+    height:230px!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+}
+@media(max-width:380px){
+  .grid article,.grid.view-list article{
+    height:220px!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+}
