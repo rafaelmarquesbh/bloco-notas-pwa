@@ -67,5 +67,5 @@
 
 /* v36 — fonte única Roboto e normalização de espaçamento */
 html,body,button,input,select,textarea,.content,.content *, .body,.body *{font-family:"Roboto",sans-serif!important}
-#lineSpacing{min-width:42px;font-size:18px;font-weight:700}
+#lineSpacing{min-width:94px;font-size:12px;font-weight:500;border:1px solid #e2e7ee;background:#fff;padding:0 8px;color:#4d586d;border-radius:8px}
 #lineSpacing:hover{background:#edf1f6}

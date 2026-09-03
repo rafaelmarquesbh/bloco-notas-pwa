@@ -163,14 +163,15 @@ function applyFontWeight(weight) {
   statusEl.textContent = "Alterações não salvas";
 }
 
-function normalizeLineSpacing() {
+function applyLineSpacing(value) {
   if (!contentEl) return;
-  contentEl.style.lineHeight = "1.6";
+  const spacing = String(value || "1.6");
+  contentEl.style.lineHeight = spacing;
   contentEl.querySelectorAll("*").forEach((el) => {
-    el.style.lineHeight = "";
+    el.style.lineHeight = spacing;
   });
   dirty = true;
-  statusEl.textContent = "Espaçamento normalizado — alterações não salvas";
+  statusEl.textContent = "Espaçamento ajustado — alterações não salvas";
 }
 
 function makeLocalId() {
@@ -280,8 +281,8 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFontWeight(event.target.value);
   });
 
-  lineSpacingEl.addEventListener("click", () => {
-    normalizeLineSpacing();
+  lineSpacingEl.addEventListener("change", (event) => {
+    applyLineSpacing(event.target.value);
   });
 
   textColorEl.addEventListener("input", (event) => {
