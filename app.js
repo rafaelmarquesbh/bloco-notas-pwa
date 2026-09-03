@@ -39,7 +39,7 @@ const sectionTitleEl = $("sectionTitle");
 const connectionEl = $("connection");
 const connectionTextEl = connectionEl?.querySelector(".connection-text");
 const syncTimeEl = $("syncTime");
-const syncCloudEl = connectionEl?.querySelector(".sync-cloud");
+const syncCloudEl = $("syncCloud");
 
 const hasSupabase = () => typeof supabaseClient !== "undefined";
 
