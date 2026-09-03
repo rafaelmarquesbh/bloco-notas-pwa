@@ -168,6 +168,14 @@ function makeLocalId() {
   return `local-${Date.now()}-${random}`;
 }
 
+function ensureRobotoFormatting() {
+  if (!contentEl) return;
+  contentEl.style.fontFamily = 'Roboto, sans-serif';
+  contentEl.querySelectorAll('*').forEach((el) => {
+    el.style.fontFamily = 'Roboto, sans-serif';
+  });
+}
+
 function normalizeNote(note, index = 0) {
   return {
     ...note,
@@ -477,6 +485,7 @@ function openEditor(note, focusTitle = false) {
 
   titleEl.value = note.titulo || "";
   contentEl.innerHTML = note.conteudo || "";
+  ensureRobotoFormatting();
 
   pinEl.textContent = note.fixada ? "📌" : "📍";
   archiveEl.textContent = note.arquivada ? "📤" : "📥";
