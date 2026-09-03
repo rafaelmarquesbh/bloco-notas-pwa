@@ -32,7 +32,7 @@
     <div class="workspace">
       <main class="content-area">
         <div class="page-heading">
-          <div><span class="eyebrow">SEU CADERNO</span><h1 id="sectionTitle">NOTAS</h1></div>
+          <div class="page-heading-title"><span class="eyebrow">SEU CADERNO</span></div>
           <button class="mobile-new" type="button" onclick="document.getElementById('newBtn').click()" aria-label="Criar nova nota">+</button>
         </div>
 
@@ -41,7 +41,7 @@
           <div id="pinned" class="grid"></div>
         </section>
         <section class="note-section">
-          <div id="regularCaption" class="section-caption"><span>Notas</span><em>Mais recentes e organizadas por você</em></div>
+          
           <div id="notes" class="grid"></div>
           <div id="empty" class="empty">
             <div class="empty-icon">✎</div>
@@ -68,8 +68,9 @@
         </div>
         <div id="palette" class="palette hidden"><button data-c="#fffdf5"></button><button data-c="#fff1f2"></button><button data-c="#fff7d6"></button><button data-c="#eaf7ee"></button><button data-c="#e8f3ff"></button><button data-c="#f1eaff"></button><button data-c="#ffffff"></button></div>
         <div class="toolbar">
-          <select id="font" aria-label="Fonte"><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Trebuchet MS</option><option>Courier New</option></select>
-          <select id="size" aria-label="Tamanho"><option value="2">Pequena</option><option value="3" selected>Normal</option><option value="4">Grande</option><option value="5">Muito grande</option><option value="6">Título</option></select>
+          <select id="font" aria-label="Fonte"><option value="Roboto" selected>Roboto</option></select>
+          <select id="size" aria-label="Tamanho"><option value="2">Menor</option><option value="3" selected>Normal</option><option value="4">Maior</option><option value="5">Muito maior</option><option value="6">Título</option></select>
+          <select id="weight" aria-label="Intensidade"><option value="300">Suave</option><option value="400" selected>Normal</option><option value="600">Forte</option></select>
           <span class="tool-divider"></span>
           <button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="strikeThrough"><s>S</s></button>
           <input id="textColor" type="color" value="#202124" aria-label="Cor do texto">

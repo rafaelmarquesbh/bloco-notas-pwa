@@ -26,6 +26,7 @@ const titleEl = $("title");
 const contentEl = $("content");
 const fontEl = $("font");
 const sizeEl = $("size");
+const weightEl = $("weight");
 const textColorEl = $("textColor");
 const linkEl = $("link");
 const overlayEl = $("overlay");
@@ -140,6 +141,28 @@ function updateConnectionStatus() {
   if (syncCloudEl) syncCloudEl.setAttribute("aria-label", state === "online" ? "Sincronizado" : "Sincronização");
 }
 
+function applyFontWeight(weight) {
+  contentEl.focus();
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) {
+    contentEl.style.fontWeight = weight;
+  } else {
+    const fragment = range.extractContents();
+    const span = document.createElement("span");
+    span.style.fontWeight = weight;
+    span.appendChild(fragment);
+    range.insertNode(span);
+    selection.removeAllRanges();
+    const next = document.createRange();
+    next.selectNodeContents(span);
+    selection.addRange(next);
+  }
+  dirty = true;
+  statusEl.textContent = "Alterações não salvas";
+}
+
 function makeLocalId() {
   const random = Math.random().toString(36).slice(2);
   return `local-${Date.now()}-${random}`;
@@ -240,6 +263,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.execCommand("fontSize", false, event.target.value);
     dirty = true;
     statusEl.textContent = "Alterações não salvas";
+  });
+
+  weightEl.addEventListener("change", (event) => {
+    applyFontWeight(event.target.value);
   });
 
   textColorEl.addEventListener("input", (event) => {
@@ -355,7 +382,7 @@ function render() {
 
   pinnedSecEl.classList.toggle("hidden", pinned.length === 0);
   emptyEl.classList.toggle("hidden", filtered.length !== 0);
-  sectionTitleEl.textContent = query ? `RESULTADOS (${filtered.length})` : "NOTAS";
+  if (sectionTitleEl) sectionTitleEl.textContent = query ? `RESULTADOS (${filtered.length})` : "";
 }
 
 function draw(element, list) {
