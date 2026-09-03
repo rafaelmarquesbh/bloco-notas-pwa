@@ -1,4 +1,4 @@
-const CACHE_NAME = "notas-v29";
+const CACHE_NAME = "notas-v30";
 const APP_ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./manifest.json", "./favicon.svg"];
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE_NAME).then(async cache => { await cache.addAll(APP_ASSETS); try{await cache.add(SUPABASE_JS)}catch(e){} })); self.skipWaiting(); });
