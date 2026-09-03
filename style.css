@@ -359,3 +359,32 @@ html,body{max-width:100%;overflow-x:hidden}
   }
   .grid article .body { max-height: 180px !important; }
 }
+
+/* V24 - papel de caderno aplicado diretamente na área do texto */
+.grid article .body{
+  position:relative!important;
+  background-image:repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 20px,
+    rgba(70,80,95,.28) 21px,
+    transparent 22px
+  )!important;
+  background-position:0 1px!important;
+  background-size:100% 22px!important;
+  background-repeat:repeat!important;
+  padding-top:1px!important;
+}
+@media(max-width:700px){
+  .grid article .body{
+    background-image:repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 18px,
+      rgba(70,80,95,.30) 19px,
+      transparent 20px
+    )!important;
+    background-position:0 1px!important;
+    background-size:100% 20px!important;
+  }
+}
