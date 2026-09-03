@@ -85,8 +85,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .actions button,header button{padding:7px;font-size:20px}
   .actions button#searchBtn{display:block}
   #newBtn{width:38px;height:38px;padding:0!important;border-radius:11px!important;font-size:0!important;display:grid;place-items:center}
-  #newBtn::before{content:'+';font-size:24px;line-height:1;font-weight:700}
-  .search{padding:7px 10px}
+    .search{padding:7px 10px}
   main{padding:13px 10px 24px}
   h2{font-size:10px;letter-spacing:.08em;margin:0 3px 8px}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -145,4 +144,17 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:380px){
   .sync-time{display:none}
   .view-btn{display:none}
+}
+
+/* V12 - botão adicionar nota: um único + perfeitamente centralizado */
+#newBtn::before{content:none!important;display:none!important}
+#newBtn .new-plus{position:relative;display:block;width:18px;height:18px;flex:0 0 18px}
+#newBtn .new-plus::before,#newBtn .new-plus::after{content:"";position:absolute;left:50%;top:50%;background:currentColor;border-radius:3px;transform:translate(-50%,-50%)}
+#newBtn .new-plus::before{width:18px;height:3px}
+#newBtn .new-plus::after{width:3px;height:18px}
+@media(max-width:700px){
+  #newBtn{width:40px!important;height:40px!important;min-width:40px!important;border-radius:50%!important;padding:0!important;display:grid!important;place-items:center!important;line-height:0!important;font-size:0!important}
+  #newBtn .new-plus{width:18px!important;height:18px!important;margin:0!important}
+  #newBtn .new-plus::before{width:18px!important;height:3px!important}
+  #newBtn .new-plus::after{width:3px!important;height:18px!important}
 }
