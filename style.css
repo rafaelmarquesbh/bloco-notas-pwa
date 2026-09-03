@@ -322,3 +322,40 @@ html,body{max-width:100%;overflow-x:hidden}
   .grid article{min-height:145px!important;max-height:260px!important;padding:11px 10px!important;}
   .grid article .body{max-height:215px!important;}
 }
+
+/* v21 - estilo caderno com linhas suaves nos cartões */
+.grid article {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    rgba(80,90,105,.10) 28px,
+    transparent 29px
+  );
+  background-position: 0 12px;
+  background-size: 100% 29px;
+  max-height: 285px !important;
+  overflow: hidden !important;
+}
+.grid article .body {
+  max-height: 205px !important;
+  overflow: hidden !important;
+}
+@media (max-width: 600px) {
+  .grid article {
+    min-height: 145px !important;
+    max-height: 260px !important;
+    background-position: 0 10px;
+    background-size: 100% 27px;
+  }
+  .grid article .body {
+    max-height: 190px !important;
+  }
+}
+@media (max-width: 380px) {
+  .grid article {
+    min-height: 140px !important;
+    max-height: 245px !important;
+  }
+  .grid article .body { max-height: 180px !important; }
+}
