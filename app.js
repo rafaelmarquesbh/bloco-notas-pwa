@@ -359,7 +359,7 @@ function draw(element, list) {
     article.draggable = true;
     article.dataset.id = note.id;
     article.title = "Arraste para mudar a ordem";
-    article.style.background = note.cor_nota || "#fff";
+    article.style.backgroundColor = note.cor_nota || "#fff";
 
     const title = escapeHtml(note.titulo || "");
     const body = note.conteudo || "";

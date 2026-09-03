@@ -359,3 +359,15 @@ html,body{max-width:100%;overflow-x:hidden}
   }
   .grid article .body { max-height: 180px !important; }
 }
+
+/* V22 - pautas aplicadas no corpo da nota */
+.grid article .body {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 24px, rgba(90,100,115,.22) 25px, transparent 26px) !important;
+  background-position: 0 2px !important;
+  background-size: 100% 26px !important;
+  padding-top: 2px;
+}
+.grid article { background-image: none !important; }
+@media (max-width:600px){
+  .grid article .body { background-size:100% 25px !important; background-position:0 1px !important; }
+}
