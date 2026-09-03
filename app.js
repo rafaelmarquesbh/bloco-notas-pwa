@@ -37,6 +37,7 @@ const pinnedSecEl = $("pinnedSec");
 const emptyEl = $("empty");
 const sectionTitleEl = $("sectionTitle");
 const connectionEl = $("connection");
+const connectionTextEl = connectionEl?.querySelector(".connection-text");
 
 const hasSupabase = () => typeof supabaseClient !== "undefined";
 
@@ -103,19 +104,23 @@ function updateConnectionStatus() {
   const offline = !navigator.onLine;
   if (!connectionEl) return;
   const pending = readQueue().length;
+  let label = "";
+  let state = "";
   if (offline) {
-    connectionEl.textContent = "● Offline — alterações salvas neste dispositivo";
-    connectionEl.className = "connection offline";
+    label = "Offline — salvo neste dispositivo";
+    state = "offline";
   } else if (syncing) {
-    connectionEl.textContent = "● Sincronizando...";
-    connectionEl.className = "connection syncing";
+    label = "Sincronizando...";
+    state = "syncing";
   } else if (pending) {
-    connectionEl.textContent = `● Online — ${pending} alteração(ões) aguardando sincronização`;
-    connectionEl.className = "connection pending";
+    label = `Online — ${pending} aguardando sincronização`;
+    state = "pending";
   } else {
-    connectionEl.textContent = "● Online — sincronizado";
-    connectionEl.className = "connection online";
+    label = "Online — sincronizado";
+    state = "online";
   }
+  connectionEl.className = `connection ${state}`;
+  if (connectionTextEl) connectionTextEl.textContent = label;
 }
 
 function makeLocalId() {
