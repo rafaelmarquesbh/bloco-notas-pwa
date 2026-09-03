@@ -294,3 +294,31 @@ html,body{max-width:100%;overflow-x:hidden}
     overflow:hidden!important;
   }
 }
+
+/* V20 - cartões com altura controlada, sem faixa de rodapé */
+.grid{align-items:start!important;}
+.grid article{
+  box-sizing:border-box!important;
+  min-height:145px!important;
+  max-height:285px!important;
+  height:auto!important;
+  overflow:hidden!important;
+  display:block!important;
+  padding:16px!important;
+}
+.grid article .body{
+  max-height:215px!important;
+  height:auto!important;
+  overflow:hidden!important;
+}
+.grid article .meta{display:none!important;height:0!important;margin:0!important;padding:0!important;border:0!important;}
+@media(max-width:700px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;}
+  .grid article{min-height:150px!important;max-height:285px!important;padding:12px!important;}
+  .grid article .body{max-height:235px!important;}
+}
+@media(max-width:380px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;}
+  .grid article{min-height:145px!important;max-height:260px!important;padding:11px 10px!important;}
+  .grid article .body{max-height:215px!important;}
+}
