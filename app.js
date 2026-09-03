@@ -450,7 +450,6 @@ function openEditor(note) {
   statusEl.textContent = note._localOnly || String(note.id).startsWith("local-") ? "Salva neste dispositivo" : "Nota carregada";
 
   overlayEl.classList.remove("hidden");
-  setTimeout(() => titleEl.focus(), 50);
 }
 
 async function saveAndClose() {
