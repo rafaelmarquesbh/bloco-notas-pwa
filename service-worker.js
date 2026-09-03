@@ -1,4 +1,4 @@
-const CACHE_NAME = "notas-v10";
+const CACHE_NAME = "notas-v11";
 const APP_ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./manifest.json", "./favicon.svg"];
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 

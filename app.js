@@ -38,6 +38,10 @@ const emptyEl = $("empty");
 const sectionTitleEl = $("sectionTitle");
 const connectionEl = $("connection");
 const connectionTextEl = connectionEl?.querySelector(".connection-text");
+const syncTimeEl = $("syncTime");
+const viewGridBtnEl = $("viewGridBtn");
+const viewListBtnEl = $("viewListBtn");
+const VIEW_KEY = "minhas_notas_view";
 
 const hasSupabase = () => typeof supabaseClient !== "undefined";
 
@@ -100,6 +104,14 @@ function queueReorder() {
   writeQueue(queue);
 }
 
+function updateSyncTime(value) {
+  if (!syncTimeEl) return;
+  if (!value) { syncTimeEl.textContent = ""; return; }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return;
+  syncTimeEl.textContent = `Sincr. ${date.toLocaleDateString("pt-BR", {day:"2-digit", month:"2-digit"})} ${date.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})}`;
+}
+
 function updateConnectionStatus() {
   const offline = !navigator.onLine;
   if (!connectionEl) return;
@@ -121,6 +133,7 @@ function updateConnectionStatus() {
   }
   connectionEl.className = `connection ${state}`;
   if (connectionTextEl) connectionTextEl.textContent = label;
+  if (state === "online" && !syncTimeEl?.textContent) updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
 }
 
 function makeLocalId() {
@@ -169,8 +182,19 @@ function applyPendingToServerData(serverNotes) {
   return merged;
 }
 
+function setView(mode) {
+  const normalized = mode === "list" ? "list" : "grid";
+  localStorage.setItem(VIEW_KEY, normalized);
+  [pinnedEl, notesEl].forEach((el) => el?.classList.toggle("view-list", normalized === "list"));
+  viewGridBtnEl?.classList.toggle("active", normalized === "grid");
+  viewListBtnEl?.classList.toggle("active", normalized === "list");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   newBtnEl.addEventListener("click", newNote);
+  viewGridBtnEl?.addEventListener("click", () => setView("grid"));
+  viewListBtnEl?.addEventListener("click", () => setView("list"));
+  setView(localStorage.getItem(VIEW_KEY) || "grid");
   emptyNewEl.addEventListener("click", newNote);
   closeEl.addEventListener("click", saveAndClose);
   saveEl.addEventListener("click", saveAndClose);
@@ -302,6 +326,8 @@ async function loadNotes(fromOnlineEvent = false) {
     notes.forEach((n, i) => { if (n.ordem === null || n.ordem === undefined) n.ordem = i; });
     notes.sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0));
     writeCache();
+    localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
+    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
     render();
     updateConnectionStatus();
 
@@ -352,12 +378,9 @@ function draw(element, list) {
     const title = escapeHtml(note.titulo || "");
     const body = note.conteudo || "";
     const safeBody = body.trim() ? body : "<span class='watermark-empty'>Sem conteúdo</span>";
-    const meta = formatDate(note.updated_at || note.created_at);
-
     article.innerHTML = `
       <h3 class="note-title">${title || "<span class='watermark-empty'>Sem título</span>"}</h3>
       <div class="body">${safeBody}</div>
-      <div class="meta">${meta}</div>
     `;
 
     article.addEventListener("click", () => openEditor(note));
@@ -550,6 +573,8 @@ async function saveNote() {
     current = { ...saved };
     dirty = false;
     writeCache();
+    localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
+    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
     removeQueueForId(localId);
     render();
     statusEl.textContent = "Salvo ✓";
@@ -667,6 +692,8 @@ async function syncPending() {
     }
 
     writeCache();
+    localStorage.setItem("minhas_notas_last_sync", new Date().toISOString());
+    updateSyncTime(localStorage.getItem("minhas_notas_last_sync"));
   } catch (error) {
     console.error("Sincronização pendente:", error);
   } finally {
