@@ -61,3 +61,41 @@ html,body{max-width:100%;overflow-x:hidden}
   .connection-text{font-size:9px}
   .actions button#searchBtn{display:none}
 }
+
+
+/* V9 - cabeçalho mobile e indicador de conexão */
+.connection-dot{background:#9aa0a6!important;box-shadow:0 0 0 2px #9aa0a61a!important}
+.connection.online .connection-dot{background:#20c55a!important;box-shadow:0 0 0 3px rgba(32,197,90,.16),0 0 8px rgba(32,197,90,.28)!important}
+.connection.syncing .connection-dot,.connection.pending .connection-dot{background:#f59e0b!important;box-shadow:0 0 0 3px rgba(245,158,11,.14)!important}
+.connection.offline .connection-dot{background:#8b929b!important;box-shadow:0 0 0 2px rgba(139,146,155,.14)!important}
+
+.grid article{position:relative;padding-bottom:31px}
+.grid article .meta{position:absolute;left:12px;right:12px;bottom:8px;margin:0!important;padding:0!important;border:0!important;height:auto;line-height:1.1;font-size:8px!important;opacity:.42!important;color:#68707a!important}
+
+@media(max-width:700px){
+  header{height:60px;padding:0 9px;gap:7px;justify-content:space-between}
+  .brand{gap:8px;flex:1;min-width:0}
+  .brand>span{width:34px;height:34px;border-radius:10px;font-size:18px}
+  .brand b{font-size:17px;line-height:1;white-space:nowrap;display:block}
+  .brand small{display:none}
+  .actions{gap:2px;flex:none}
+  .connection{width:12px;max-width:12px;height:20px;gap:0;overflow:visible;opacity:1!important}
+  .connection-text{display:none}
+  .connection-dot{width:9px!important;height:9px!important;min-width:9px!important}
+  .actions button,header button{padding:7px;font-size:20px}
+  .actions button#searchBtn{display:block}
+  #newBtn{width:38px;height:38px;padding:0!important;border-radius:11px!important;font-size:0!important;display:grid;place-items:center}
+  #newBtn::before{content:'+';font-size:24px;line-height:1;font-weight:700}
+  .search{padding:7px 10px}
+  main{padding:13px 10px 24px}
+  h2{font-size:10px;letter-spacing:.08em;margin:0 3px 8px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .grid article{padding:12px 12px 29px;min-height:145px;border-radius:12px}
+  .grid h3,.note-title{font-size:14px!important;margin:0 15px 7px 0!important;line-height:1.25}
+  .body{font-size:13px;line-height:1.42;max-height:92px;word-break:break-word}
+  .grid article .meta{left:12px;right:12px;bottom:8px;font-size:7.5px!important;opacity:.38!important}
+}
+@media(max-width:380px){
+  .grid{grid-template-columns:1fr}
+  .connection{width:11px;max-width:11px}
+}
