@@ -369,7 +369,7 @@ function draw(element, list) {
       <div class="body">${safeBody}</div>
     `;
 
-    article.addEventListener("click", () => openEditor(note));
+    article.addEventListener("click", () => openEditor(note, false));
 
     article.addEventListener("dragstart", (event) => {
       article.dataset.dragged = "0";
@@ -434,10 +434,10 @@ function newNote() {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     _localOnly: true
-  });
+  }, true);
 }
 
-function openEditor(note) {
+function openEditor(note, focusTitle = false) {
   current = { ...note };
   dirty = false;
 
@@ -450,6 +450,22 @@ function openEditor(note) {
   statusEl.textContent = note._localOnly || String(note.id).startsWith("local-") ? "Salva neste dispositivo" : "Nota carregada";
 
   overlayEl.classList.remove("hidden");
+
+  // Nota existente: abre apenas para visualização, sem colocar foco em nenhum campo.
+  // Nova nota: coloca o cursor no título e abre o teclado automaticamente.
+  requestAnimationFrame(() => {
+    if (focusTitle) {
+      titleEl.focus();
+      titleEl.setSelectionRange(titleEl.value.length, titleEl.value.length);
+    } else {
+      titleEl.blur();
+      contentEl.blur();
+      if (document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+      }
+      cardEl.focus({ preventScroll: true });
+    }
+  });
 }
 
 async function saveAndClose() {
