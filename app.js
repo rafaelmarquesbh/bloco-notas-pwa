@@ -543,7 +543,10 @@ async function saveNote() {
     if (result.error) throw result.error;
 
     const saved = normalizeNote(result.data);
-    notes = notes.map((note) => String(note.id) === String(localId) ? saved : note);
+    const replaced = notes.some((note) => String(note.id) === String(localId));
+    notes = replaced
+      ? notes.map((note) => String(note.id) === String(localId) ? saved : note)
+      : [...notes, saved];
     current = { ...saved };
     dirty = false;
     writeCache();
@@ -626,7 +629,10 @@ async function syncPending() {
       if (result.error) throw result.error;
 
       const saved = normalizeNote(result.data);
-      notes = notes.map((n) => String(n.id) === String(localNote.id) ? saved : n);
+      const replaced = notes.some((n) => String(n.id) === String(localNote.id));
+      notes = replaced
+        ? notes.map((n) => String(n.id) === String(localNote.id) ? saved : n)
+        : [...notes, saved];
       queue = queue.filter((q) => !(q.type === "upsert" && String(q.localId) === String(localNote.id)));
       writeQueue(queue);
       writeCache();
