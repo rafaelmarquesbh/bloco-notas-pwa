@@ -173,7 +173,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .brand b{font-size:0!important;white-space:nowrap}
   .brand b::after{content:"Nota";font-size:16px;line-height:1;display:block}
   .grid,.grid.view-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
-  .grid article,.grid.view-list article{min-height:140px!important;padding:11px 10px 29px!important}
+  .grid article,.grid.view-list article{min-height:140px!important;padding:11px 10px!important}
 }
 
 
@@ -249,3 +249,8 @@ html,body{max-width:100%;overflow-x:hidden}
   #searchBtn{width:30px;height:36px;margin-right:7px;font-size:21px!important;}
   #newBtn{width:40px!important;height:40px!important;min-width:40px!important;}
 }
+
+/* V15 - cartões livres, sem faixa/rodapé reservado para data */
+.grid article{padding-bottom:16px!important;}
+.grid article .meta{display:none!important;height:0!important;margin:0!important;padding:0!important;border:0!important;}
+@media(max-width:380px){.grid article,.grid.view-list article{padding:11px 10px!important;min-height:140px!important;}}
