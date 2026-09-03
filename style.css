@@ -158,3 +158,20 @@ html,body{max-width:100%;overflow-x:hidden}
   #newBtn .new-plus::before{width:18px!important;height:3px!important}
   #newBtn .new-plus::after{width:3px!important;height:18px!important}
 }
+
+
+/* V13 - somente grade + cabeçalho adaptado para telas pequenas */
+.grid.view-list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(235px,1fr))!important;gap:15px!important}
+.grid.view-list article{width:auto!important;min-height:145px!important}
+.view-btn{display:none!important}
+
+@media(max-width:700px){
+  .grid.view-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  .grid.view-list article{min-height:145px!important}
+}
+@media(max-width:380px){
+  .brand b{font-size:0!important;white-space:nowrap}
+  .brand b::after{content:"Nota";font-size:16px;line-height:1;display:block}
+  .grid,.grid.view-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .grid article,.grid.view-list article{min-height:140px!important;padding:11px 10px 29px!important}
+}

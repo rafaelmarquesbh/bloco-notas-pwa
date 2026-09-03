@@ -39,9 +39,6 @@ const sectionTitleEl = $("sectionTitle");
 const connectionEl = $("connection");
 const connectionTextEl = connectionEl?.querySelector(".connection-text");
 const syncTimeEl = $("syncTime");
-const viewGridBtnEl = $("viewGridBtn");
-const viewListBtnEl = $("viewListBtn");
-const VIEW_KEY = "minhas_notas_view";
 
 const hasSupabase = () => typeof supabaseClient !== "undefined";
 
@@ -182,19 +179,8 @@ function applyPendingToServerData(serverNotes) {
   return merged;
 }
 
-function setView(mode) {
-  const normalized = mode === "list" ? "list" : "grid";
-  localStorage.setItem(VIEW_KEY, normalized);
-  [pinnedEl, notesEl].forEach((el) => el?.classList.toggle("view-list", normalized === "list"));
-  viewGridBtnEl?.classList.toggle("active", normalized === "grid");
-  viewListBtnEl?.classList.toggle("active", normalized === "list");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   newBtnEl.addEventListener("click", newNote);
-  viewGridBtnEl?.addEventListener("click", () => setView("grid"));
-  viewListBtnEl?.addEventListener("click", () => setView("list"));
-  setView(localStorage.getItem(VIEW_KEY) || "grid");
   emptyNewEl.addEventListener("click", newNote);
   closeEl.addEventListener("click", saveAndClose);
   saveEl.addEventListener("click", saveAndClose);
