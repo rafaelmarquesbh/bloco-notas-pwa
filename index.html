@@ -1,9 +1,97 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7c948"><link rel="manifest" href="manifest.json"><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="style.css"><title>Minhas Notas</title></head><body>
-<header><div class="brand"><span>✦</span><div><b>Minhas Notas</b><small>Bloco de notas</small></div></div><div class="actions"><span id="connection" class="connection"><i class="connection-dot"></i><span class="connection-text">Conectando...</span></span><span id="syncTime" class="sync-time"></span><button id="searchBtn" aria-label="Pesquisar" title="Pesquisar">⌕</button><button id="newBtn" class="primary" aria-label="Adicionar nota" title="Adicionar nota"><span class="new-plus" aria-hidden="true"></span><span class="new-label">Nova nota</span></button></div></header>
-<div id="search" class="search hidden"><input id="searchInput" placeholder="Pesquisar notas..."><button id="closeSearch">×</button></div>
-<main><section id="pinnedSec" class="hidden"><h2>FIXADAS</h2><div id="pinned" class="grid"></div></section><section><h2 id="sectionTitle">NOTAS</h2><div id="notes" class="grid"></div><div id="empty" class="empty"><div>📝</div><h3>Nenhuma nota ainda</h3><p>Crie sua primeira anotação.</p><button id="emptyNew" class="primary">+ Criar nota</button></div></section></main>
-<div id="overlay" class="overlay hidden"><div id="card" class="editor" tabindex="-1"><div class="editorHead"><input id="title" placeholder="Título"><div><button id="pin">📍</button><button id="colors">🎨</button><button id="archive">📥</button><button id="del">🗑</button><button id="close">×</button></div></div>
-<div id="palette" class="palette hidden"><button data-c="#fffdf5"></button><button data-c="#fff1f2"></button><button data-c="#fff7d6"></button><button data-c="#eaf7ee"></button><button data-c="#e8f3ff"></button><button data-c="#f1eaff"></button><button data-c="#fff"></button></div>
-<div class="toolbar"><select id="font"><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Trebuchet MS</option><option>Courier New</option></select><select id="size"><option value="2">Pequena</option><option value="3" selected>Normal</option><option value="4">Grande</option><option value="5">Muito grande</option><option value="6">Título</option></select><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="strikeThrough"><s>S</s></button><input id="textColor" type="color" value="#202124"><button data-cmd="justifyLeft">≡</button><button data-cmd="justifyCenter">☰</button><button data-cmd="justifyRight">≡</button><button data-cmd="insertUnorderedList">• Lista</button><button data-cmd="insertOrderedList">1. Lista</button><button id="link">🔗</button><button data-cmd="removeFormat" title="Remove negrito, cor, tamanho e outras formatações da seleção">↶ Limpar formatação</button></div>
-<div id="content" class="content" contenteditable="true" data-placeholder="Comece a escrever..."></div><footer><span id="status">Nova nota</span><button id="save" class="primary">Salvar</button></footer></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Bloco de notas pessoal PWA">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <title>Minhas Notas</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <div class="brand-copy"><b>Minhas Notas</b><small>Seu espaço para ideias</small></div>
+      </div>
+      <div class="top-actions">
+        <span id="connection" class="connection"><i class="connection-dot"></i><span class="connection-text">Conectando...</span></span>
+        <span id="syncTime" class="sync-time"></span>
+        <button id="searchBtn" class="icon-btn" aria-label="Pesquisar" title="Pesquisar">⌕</button>
+        <button id="newBtn" class="new-note-btn" aria-label="Adicionar nota" title="Adicionar nota"><span class="new-plus" aria-hidden="true"></span><span class="new-label">Nova nota</span></button>
+      </div>
+    </header>
+
+    <div id="search" class="searchbar hidden">
+      <div class="search-inner"><span>⌕</span><input id="searchInput" placeholder="Pesquisar por título ou conteúdo..." autocomplete="off"><button id="closeSearch" aria-label="Fechar pesquisa">×</button></div>
+    </div>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="side-label">NAVEGAÇÃO</div>
+        <button class="side-item active" type="button"><span>▦</span><span>Todas as notas</span></button>
+        <div class="side-hint">Arraste os cartões para reorganizar.</div>
+        <div class="side-footer"><div class="side-status"><span class="status-pip"></span><span>Sincronização automática</span></div></div>
+      </aside>
+
+      <main class="content-area">
+        <div class="page-heading">
+          <div><span class="eyebrow">SEU CADERNO</span><h1 id="sectionTitle">NOTAS</h1></div>
+          <button class="mobile-new" type="button" onclick="document.getElementById('newBtn').click()" aria-label="Criar nova nota">+</button>
+        </div>
+
+        <section id="pinnedSec" class="note-section hidden">
+          <div class="section-caption"><span>Fixadas</span><em>Primeiro lugar</em></div>
+          <div id="pinned" class="grid"></div>
+        </section>
+        <section class="note-section">
+          <div id="regularCaption" class="section-caption"><span>Suas notas</span><em>Mais recentes e organizadas por você</em></div>
+          <div id="notes" class="grid"></div>
+          <div id="empty" class="empty">
+            <div class="empty-icon">✎</div>
+            <h3>Nenhuma nota ainda</h3>
+            <p>Comece criando uma anotação rápida.</p>
+            <button id="emptyNew" class="new-note-btn">+ Criar nota</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="overlay" class="overlay hidden">
+      <div id="card" class="editor" tabindex="-1">
+        <div class="editor-topline"></div>
+        <div class="editorHead">
+          <div class="editor-title-wrap"><span class="editor-symbol">✦</span><input id="title" placeholder="Título da nota" autocomplete="off"></div>
+          <div class="editor-actions">
+            <button id="pin" aria-label="Fixar">📍</button>
+            <button id="colors" aria-label="Cor">🎨</button>
+            <button id="archive" aria-label="Arquivar">📥</button>
+            <button id="del" aria-label="Excluir">🗑</button>
+            <button id="close" class="close-editor" aria-label="Fechar">×</button>
+          </div>
+        </div>
+        <div id="palette" class="palette hidden"><button data-c="#fffdf5"></button><button data-c="#fff1f2"></button><button data-c="#fff7d6"></button><button data-c="#eaf7ee"></button><button data-c="#e8f3ff"></button><button data-c="#f1eaff"></button><button data-c="#ffffff"></button></div>
+        <div class="toolbar">
+          <select id="font" aria-label="Fonte"><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Trebuchet MS</option><option>Courier New</option></select>
+          <select id="size" aria-label="Tamanho"><option value="2">Pequena</option><option value="3" selected>Normal</option><option value="4">Grande</option><option value="5">Muito grande</option><option value="6">Título</option></select>
+          <span class="tool-divider"></span>
+          <button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="strikeThrough"><s>S</s></button>
+          <input id="textColor" type="color" value="#202124" aria-label="Cor do texto">
+          <span class="tool-divider"></span>
+          <button data-cmd="justifyLeft">≡</button><button data-cmd="justifyCenter">☰</button><button data-cmd="justifyRight">≡</button>
+          <button data-cmd="insertUnorderedList">• Lista</button><button data-cmd="insertOrderedList">1. Lista</button><button id="link">🔗</button>
+          <button data-cmd="removeFormat" title="Limpar formatação">↶</button>
+        </div>
+        <div id="content" class="content" contenteditable="true" data-placeholder="Comece a escrever..."></div>
+        <footer><span id="status">Nova nota</span><button id="save" class="save-btn">Salvar nota</button></footer>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
