@@ -175,3 +175,77 @@ html,body{max-width:100%;overflow-x:hidden}
   .grid,.grid.view-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
   .grid article,.grid.view-list article{min-height:140px!important;padding:11px 10px 29px!important}
 }
+
+
+/* V14 - cabeçalho refinado para telas pequenas */
+@media (max-width: 700px){
+  header{
+    height:64px;
+    padding:0 12px;
+    gap:8px;
+  }
+  .brand{flex:1;min-width:0;gap:8px;}
+  .brand>span{width:34px;height:34px;flex:0 0 34px;}
+  .brand b{font-size:16px;white-space:nowrap;line-height:1;}
+  .actions{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:0;
+  }
+  .connection{
+    width:auto;
+    max-width:none;
+    height:28px;
+    margin-right:6px;
+    overflow:visible;
+    opacity:1!important;
+    display:inline-flex;
+    align-items:center;
+  }
+  .connection-text{display:none;}
+  .connection-dot{
+    width:10px!important;height:10px!important;min-width:10px!important;
+  }
+  .sync-time{
+    display:block!important;
+    max-width:none!important;
+    width:auto;
+    margin-right:12px;
+    font-size:9px!important;
+    line-height:1;
+    color:#737a84!important;
+    opacity:.75!important;
+    white-space:nowrap;
+  }
+  #searchBtn{
+    display:grid!important;
+    place-items:center;
+    width:34px;height:38px;
+    padding:0!important;
+    margin-right:8px;
+    font-size:22px!important;
+  }
+  #newBtn{
+    width:42px!important;height:42px!important;min-width:42px!important;
+    margin:0!important;
+    border-radius:50%!important;
+    padding:0!important;
+    display:grid!important;place-items:center!important;
+    box-shadow:0 2px 8px #00000020;
+  }
+  #newBtn .new-plus{width:19px!important;height:19px!important;}
+  #newBtn .new-plus::before{width:19px!important;height:3px!important;}
+  #newBtn .new-plus::after{width:3px!important;height:19px!important;}
+}
+
+@media (max-width: 380px){
+  header{padding:0 10px;gap:5px;}
+  .brand{gap:7px;}
+  .brand>span{width:32px;height:32px;flex-basis:32px;}
+  .brand b{font-size:16px;}
+  .sync-time{font-size:8.5px!important;margin-right:9px;}
+  .connection{margin-right:5px;}
+  #searchBtn{width:30px;height:36px;margin-right:7px;font-size:21px!important;}
+  #newBtn{width:40px!important;height:40px!important;min-width:40px!important;}
+}
