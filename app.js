@@ -24,9 +24,9 @@ const searchInputEl = $("searchInput");
 const closeSearchEl = $("closeSearch");
 const titleEl = $("title");
 const contentEl = $("content");
-const fontEl = $("font");
 const sizeEl = $("size");
 const weightEl = $("weight");
+const lineSpacingEl = $("lineSpacing");
 const textColorEl = $("textColor");
 const linkEl = $("link");
 const overlayEl = $("overlay");
@@ -163,6 +163,16 @@ function applyFontWeight(weight) {
   statusEl.textContent = "Alterações não salvas";
 }
 
+function normalizeLineSpacing() {
+  if (!contentEl) return;
+  contentEl.style.lineHeight = "1.6";
+  contentEl.querySelectorAll("*").forEach((el) => {
+    el.style.lineHeight = "";
+  });
+  dirty = true;
+  statusEl.textContent = "Espaçamento normalizado — alterações não salvas";
+}
+
 function makeLocalId() {
   const random = Math.random().toString(36).slice(2);
   return `local-${Date.now()}-${random}`;
@@ -259,13 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  fontEl.addEventListener("change", (event) => {
-    contentEl.focus();
-    document.execCommand("fontName", false, event.target.value);
-    dirty = true;
-    statusEl.textContent = "Alterações não salvas";
-  });
-
   sizeEl.addEventListener("change", (event) => {
     contentEl.focus();
     document.execCommand("fontSize", false, event.target.value);
@@ -275,6 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   weightEl.addEventListener("change", (event) => {
     applyFontWeight(event.target.value);
+  });
+
+  lineSpacingEl.addEventListener("click", () => {
+    normalizeLineSpacing();
   });
 
   textColorEl.addEventListener("input", (event) => {
