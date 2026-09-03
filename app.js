@@ -1,6 +1,11 @@
 let notes = [];
 let current = null;
 let dirty = false;
+let syncing = false;
+
+const CACHE_KEY = "minhas_notas_cache_v7";
+const QUEUE_KEY = "minhas_notas_queue_v7";
+const DEVICE_KEY = "minhas_notas_device_v7";
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,6 +36,133 @@ const notesEl = $("notes");
 const pinnedSecEl = $("pinnedSec");
 const emptyEl = $("empty");
 const sectionTitleEl = $("sectionTitle");
+const connectionEl = $("connection");
+
+const hasSupabase = () => typeof supabaseClient !== "undefined";
+
+function readCache() {
+  try {
+    const data = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCache() {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(notes));
+  } catch (error) {
+    console.error("Não foi possível guardar as notas localmente:", error);
+  }
+}
+
+function readQueue() {
+  try {
+    const data = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeQueue(queue) {
+  try {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch (error) {
+    console.error("Não foi possível guardar a fila de sincronização:", error);
+  }
+}
+
+function queueUpsert(note) {
+  const queue = readQueue();
+  const key = String(note.id);
+  const filtered = queue.filter((item) => !(item.type === "upsert" && String(item.localId) === key));
+  filtered.push({ type: "upsert", localId: note.id, note: { ...note } });
+  writeQueue(filtered);
+}
+
+function queueDelete(noteId) {
+  const queue = readQueue().filter((item) => {
+    if (item.type === "upsert" && String(item.localId) === String(noteId)) return false;
+    if (item.type === "delete" && String(item.id) === String(noteId)) return false;
+    return true;
+  });
+  queue.push({ type: "delete", id: noteId });
+  writeQueue(queue);
+}
+
+function queueReorder() {
+  const ids = notes.filter((n) => !n.arquivada).map((n) => n.id);
+  const queue = readQueue().filter((item) => item.type !== "reorder");
+  queue.push({ type: "reorder", ids });
+  writeQueue(queue);
+}
+
+function updateConnectionStatus() {
+  const offline = !navigator.onLine;
+  if (!connectionEl) return;
+  const pending = readQueue().length;
+  if (offline) {
+    connectionEl.textContent = "● Offline — alterações salvas neste dispositivo";
+    connectionEl.className = "connection offline";
+  } else if (syncing) {
+    connectionEl.textContent = "● Sincronizando...";
+    connectionEl.className = "connection syncing";
+  } else if (pending) {
+    connectionEl.textContent = `● Online — ${pending} alteração(ões) aguardando sincronização`;
+    connectionEl.className = "connection pending";
+  } else {
+    connectionEl.textContent = "● Online — sincronizado";
+    connectionEl.className = "connection online";
+  }
+}
+
+function makeLocalId() {
+  const random = Math.random().toString(36).slice(2);
+  return `local-${Date.now()}-${random}`;
+}
+
+function normalizeNote(note, index = 0) {
+  return {
+    ...note,
+    titulo: note.titulo || "",
+    conteudo: note.conteudo || "",
+    cor_nota: note.cor_nota || "#fffdf5",
+    fixada: Boolean(note.fixada),
+    arquivada: Boolean(note.arquivada),
+    etiquetas: Array.isArray(note.etiquetas) ? note.etiquetas : [],
+    ordem: Number.isFinite(Number(note.ordem)) ? Number(note.ordem) : index,
+    created_at: note.created_at || new Date().toISOString(),
+    updated_at: note.updated_at || new Date().toISOString()
+  };
+}
+
+function applyPendingToServerData(serverNotes) {
+  let merged = serverNotes.map((n, i) => normalizeNote(n, i));
+  const queue = readQueue();
+
+  for (const item of queue) {
+    if (item.type === "upsert") {
+      const localNote = normalizeNote(item.note);
+      const existingIndex = merged.findIndex((n) => String(n.id) === String(localNote.id));
+      if (existingIndex >= 0) merged[existingIndex] = localNote;
+      else merged.push(localNote);
+    }
+    if (item.type === "delete") {
+      merged = merged.filter((n) => String(n.id) !== String(item.id));
+    }
+  }
+
+  const reorder = [...queue].reverse().find((item) => item.type === "reorder");
+  if (reorder) {
+    const rank = new Map(reorder.ids.map((id, index) => [String(id), index]));
+    merged.sort((a, b) => (rank.get(String(a.id)) ?? 999999) - (rank.get(String(b.id)) ?? 999999));
+    merged.forEach((n, index) => { n.ordem = index; });
+  }
+
+  return merged;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   newBtnEl.addEventListener("click", newNote);
@@ -55,9 +187,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   searchInputEl.addEventListener("input", render);
 
-  // Marca a nota como alterada quando o usuário edita.
-  titleEl.addEventListener("input", () => { dirty = true; statusEl.textContent = "Alterações não salvas"; });
-  contentEl.addEventListener("input", () => { dirty = true; statusEl.textContent = "Alterações não salvas"; });
+  titleEl.addEventListener("input", () => {
+    dirty = true;
+    statusEl.textContent = "Alterações não salvas";
+  });
+  contentEl.addEventListener("input", () => {
+    dirty = true;
+    statusEl.textContent = "Alterações não salvas";
+  });
 
   document.querySelectorAll("[data-cmd]").forEach((button) => {
     button.addEventListener("mousedown", (event) => event.preventDefault());
@@ -73,18 +210,21 @@ document.addEventListener("DOMContentLoaded", () => {
     contentEl.focus();
     document.execCommand("fontName", false, event.target.value);
     dirty = true;
+    statusEl.textContent = "Alterações não salvas";
   });
 
   sizeEl.addEventListener("change", (event) => {
     contentEl.focus();
     document.execCommand("fontSize", false, event.target.value);
     dirty = true;
+    statusEl.textContent = "Alterações não salvas";
   });
 
   textColorEl.addEventListener("input", (event) => {
     contentEl.focus();
     document.execCommand("foreColor", false, event.target.value);
     dirty = true;
+    statusEl.textContent = "Alterações não salvas";
   });
 
   linkEl.addEventListener("mousedown", (event) => event.preventDefault());
@@ -94,6 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
       contentEl.focus();
       document.execCommand("createLink", false, url);
       dirty = true;
+      statusEl.textContent = "Alterações não salvas";
     }
   });
 
@@ -108,53 +249,73 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Não fecha ao clicar/soltar fora durante uma seleção de texto.
-  // O fechamento da nota é feito pelo X, Salvar ou ESC.
-
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !overlayEl.classList.contains("hidden")) {
-      saveAndClose();
-    }
+    if (event.key === "Escape" && !overlayEl.classList.contains("hidden")) saveAndClose();
   });
 
-  loadNotes();
+  window.addEventListener("online", async () => {
+    updateConnectionStatus();
+    await syncPending();
+    await loadNotes(true);
+  });
+
+  window.addEventListener("offline", updateConnectionStatus);
+  window.addEventListener("focus", () => { if (navigator.onLine) syncPending(); });
+  setInterval(() => { if (navigator.onLine) syncPending(); }, 30000);
+
+  const cached = readCache();
+  if (cached.length) {
+    notes = cached.map(normalizeNote);
+    render();
+  }
+  updateConnectionStatus();
+  loadNotes(false);
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js").catch(console.error);
   }
 });
 
-async function loadNotes() {
+async function loadNotes(fromOnlineEvent = false) {
+  if (!navigator.onLine || !hasSupabase()) {
+    if (!notes.length) render();
+    updateConnectionStatus();
+    return;
+  }
+
   try {
     const result = await supabaseClient
       .from("notas")
       .select("*")
-      .eq("arquivada", false)
       .order("fixada", { ascending: false })
       .order("ordem", { ascending: true })
       .order("updated_at", { ascending: false });
 
     if (result.error) throw result.error;
 
-    notes = result.data || [];
-    // Compatibilidade com registros antigos.
-    notes.forEach((n, i) => {
-      if (n.ordem === null || n.ordem === undefined) n.ordem = i;
-    });
+    notes = applyPendingToServerData(result.data || []);
+    notes.forEach((n, i) => { if (n.ordem === null || n.ordem === undefined) n.ordem = i; });
     notes.sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0));
+    writeCache();
     render();
+    updateConnectionStatus();
+
+    if (fromOnlineEvent) await syncPending();
   } catch (error) {
     console.error("Erro ao carregar notas:", error);
-    emptyEl.querySelector("p").textContent =
-      "Confira o Supabase e confirme que a coluna 'ordem' foi criada.";
-    render();
+    if (!notes.length) {
+      emptyEl.querySelector("p").textContent = "Sem conexão. As notas salvas neste dispositivo continuam disponíveis.";
+      render();
+    }
+    updateConnectionStatus();
   }
 }
 
 function render() {
   const query = searchInputEl.value.trim().toLowerCase();
 
-  const filtered = notes.filter((note) => {
+  const visible = notes.filter((note) => !note.arquivada);
+  const filtered = visible.filter((note) => {
     const title = (note.titulo || "").toLowerCase();
     const body = strip(note.conteudo || "").toLowerCase();
     return !query || title.includes(query) || body.includes(query);
@@ -183,23 +344,18 @@ function draw(element, list) {
     article.title = "Arraste para mudar a ordem";
     article.style.background = note.cor_nota || "#fff";
 
+    const title = escapeHtml(note.titulo || "");
+    const body = note.conteudo || "";
+    const safeBody = body.trim() ? body : "<span class='watermark-empty'>Sem conteúdo</span>";
+    const meta = formatDate(note.updated_at || note.created_at);
+
     article.innerHTML = `
-      <div class="note-label">${note.fixada ? "📌 Nota fixada" : "📝 Nota"}</div>
-      <div class="note-label">Título</div>
-      <h3>${escapeHtml(note.titulo || "Sem título")}</h3>
-      <div class="note-label">Conteúdo</div>
-      <div class="body">${note.conteudo || "<span style='color:#aaa'>Sem conteúdo</span>"}</div>
-      <div class="note-label">Última atualização</div>
-      <div class="meta">${formatDate(note.updated_at || note.created_at)}</div>
+      <h3 class="note-title">${title || "<span class='watermark-empty'>Sem título</span>"}</h3>
+      <div class="body">${safeBody}</div>
+      <div class="meta">${meta}</div>
     `;
 
-    article.addEventListener("click", (event) => {
-      if (article.dataset.dragged === "1") {
-        article.dataset.dragged = "0";
-        return;
-      }
-      openEditor(note);
-    });
+    article.addEventListener("click", () => openEditor(note));
 
     article.addEventListener("dragstart", (event) => {
       article.dataset.dragged = "0";
@@ -208,9 +364,7 @@ function draw(element, list) {
       article.classList.add("dragging");
     });
 
-    article.addEventListener("dragend", () => {
-      article.classList.remove("dragging");
-    });
+    article.addEventListener("dragend", () => article.classList.remove("dragging"));
 
     article.addEventListener("dragover", (event) => {
       event.preventDefault();
@@ -218,15 +372,13 @@ function draw(element, list) {
       article.classList.add("drag-over");
     });
 
-    article.addEventListener("dragleave", () => {
-      article.classList.remove("drag-over");
-    });
+    article.addEventListener("dragleave", () => article.classList.remove("drag-over"));
 
     article.addEventListener("drop", async (event) => {
       event.preventDefault();
       article.classList.remove("drag-over");
-      const draggedId = Number(event.dataTransfer.getData("text/plain"));
-      if (!draggedId || draggedId === note.id) return;
+      const draggedId = event.dataTransfer.getData("text/plain");
+      if (!draggedId || String(draggedId) === String(note.id)) return;
       article.dataset.dragged = "1";
       await moveNote(draggedId, note.id);
     });
@@ -236,45 +388,38 @@ function draw(element, list) {
 }
 
 async function moveNote(draggedId, targetId) {
-  const fromIndex = notes.findIndex((n) => n.id === draggedId);
-  const toIndex = notes.findIndex((n) => n.id === targetId);
+  const visible = notes.filter((n) => !n.arquivada);
+  const fromIndex = visible.findIndex((n) => String(n.id) === String(draggedId));
+  const toIndex = visible.findIndex((n) => String(n.id) === String(targetId));
   if (fromIndex < 0 || toIndex < 0) return;
 
-  const [moved] = notes.splice(fromIndex, 1);
-  let destination = notes.findIndex((n) => n.id === targetId);
-  notes.splice(destination, 0, moved);
+  const [moved] = visible.splice(fromIndex, 1);
+  visible.splice(toIndex, 0, moved);
+  visible.forEach((note, index) => { note.ordem = index; });
 
-  // Normaliza a ordem e salva no Supabase.
-  const updates = notes.map((note, index) => ({ id: note.id, ordem: index }));
-  notes.forEach((note, index) => { note.ordem = index; });
-
+  const archived = notes.filter((n) => n.arquivada);
+  notes = [...visible, ...archived];
+  writeCache();
+  queueReorder();
   render();
 
-  try {
-    for (const item of updates) {
-      const result = await supabaseClient
-        .from("notas")
-        .update({ ordem: item.ordem })
-        .eq("id", item.id);
-      if (result.error) throw result.error;
-    }
-  } catch (error) {
-    console.error("Erro ao salvar ordem:", error);
-    alert("A ordem mudou na tela, mas não foi possível gravá-la no Supabase.");
-    await loadNotes();
-  }
+  if (navigator.onLine) await syncPending();
 }
 
 function newNote() {
+  const nextOrder = notes.length ? Math.max(...notes.map(n => Number(n.ordem ?? 0))) + 1 : 0;
   openEditor({
-    id: null,
+    id: makeLocalId(),
     titulo: "",
     conteudo: "",
     cor_nota: "#fffdf5",
     fixada: false,
     arquivada: false,
     etiquetas: [],
-    ordem: notes.length ? Math.max(...notes.map(n => Number(n.ordem ?? 0))) + 1 : 0
+    ordem: nextOrder,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    _localOnly: true
   });
 }
 
@@ -287,21 +432,22 @@ function openEditor(note) {
 
   pinEl.textContent = note.fixada ? "📌" : "📍";
   archiveEl.textContent = note.arquivada ? "📤" : "📥";
-
   cardEl.style.background = note.cor_nota || "#fff";
-  statusEl.textContent = note.id ? "Nota carregada" : "Nova nota";
+  statusEl.textContent = note._localOnly || String(note.id).startsWith("local-") ? "Salva neste dispositivo" : "Nota carregada";
 
   overlayEl.classList.remove("hidden");
-  setTimeout(() => contentEl.focus(), 50);
+  setTimeout(() => titleEl.focus(), 50);
 }
 
 async function saveAndClose() {
   if (!current) return;
 
-  // Não cria nota vazia ao apertar X.
   const isEmpty = !titleEl.value.trim() && !strip(contentEl.innerHTML).trim();
-  if (!current.id && isEmpty) {
+  if (isEmpty && String(current.id).startsWith("local-") && !current._existing) {
+    notes = notes.filter((n) => String(n.id) !== String(current.id));
+    writeCache();
     closeEditor();
+    render();
     return;
   }
 
@@ -319,7 +465,10 @@ function closeEditor() {
 async function saveNote() {
   if (!current) return false;
 
-  const payload = {
+  const now = new Date().toISOString();
+  const localId = current.id;
+  const payload = normalizeNote({
+    ...current,
     titulo: titleEl.value.trim(),
     conteudo: contentEl.innerHTML,
     cor_nota: current.cor_nota || "#fff",
@@ -327,53 +476,192 @@ async function saveNote() {
     arquivada: Boolean(current.arquivada),
     etiquetas: Array.isArray(current.etiquetas) ? current.etiquetas : [],
     ordem: Number.isFinite(Number(current.ordem)) ? Number(current.ordem) : notes.length,
-    updated_at: new Date().toISOString()
-  };
+    updated_at: now
+  });
 
-  statusEl.textContent = "Salvando...";
+  statusEl.textContent = navigator.onLine ? "Salvando..." : "Salvo neste dispositivo ✓";
   saveEl.disabled = true;
+
+  const isLocal = String(localId).startsWith("local-");
+
+  if (!navigator.onLine || !hasSupabase()) {
+    const localNote = { ...payload, id: localId, _localOnly: isLocal };
+    const index = notes.findIndex((n) => String(n.id) === String(localId));
+    if (index >= 0) notes[index] = localNote;
+    else notes.push(localNote);
+    queueUpsert(localNote);
+    writeCache();
+    render();
+    dirty = false;
+    statusEl.textContent = "Salvo neste dispositivo ✓";
+    saveEl.disabled = false;
+    updateConnectionStatus();
+    return true;
+  }
 
   try {
     let result;
 
-    if (current.id) {
+    if (!isLocal) {
       result = await supabaseClient
         .from("notas")
-        .update(payload)
-        .eq("id", current.id)
+        .update({
+          titulo: payload.titulo,
+          conteudo: payload.conteudo,
+          cor_nota: payload.cor_nota,
+          fixada: payload.fixada,
+          arquivada: payload.arquivada,
+          etiquetas: payload.etiquetas,
+          ordem: payload.ordem,
+          updated_at: payload.updated_at
+        })
+        .eq("id", localId)
         .select()
         .single();
     } else {
       result = await supabaseClient
         .from("notas")
-        .insert(payload)
+        .insert({
+          titulo: payload.titulo,
+          conteudo: payload.conteudo,
+          cor_nota: payload.cor_nota,
+          fixada: payload.fixada,
+          arquivada: payload.arquivada,
+          etiquetas: payload.etiquetas,
+          ordem: payload.ordem,
+          updated_at: payload.updated_at
+        })
         .select()
         .single();
     }
 
     if (result.error) throw result.error;
 
-    if (current.id) {
-      notes = notes.map((note) => note.id === current.id ? result.data : note);
-    } else {
-      notes.push(result.data);
-      current.id = result.data.id;
-    }
-
+    const saved = normalizeNote(result.data);
+    notes = notes.map((note) => String(note.id) === String(localId) ? saved : note);
+    current = { ...saved };
     dirty = false;
-    statusEl.textContent = "Salvo ✓";
+    writeCache();
+    removeQueueForId(localId);
     render();
+    statusEl.textContent = "Salvo ✓";
+    updateConnectionStatus();
     return true;
   } catch (error) {
-    console.error("Erro ao salvar:", error);
-    statusEl.textContent = "Erro ao salvar";
-    alert(
-      "Não foi possível salvar a nota no Supabase.\n\n" +
-      "Detalhes: " + (error.message || "erro desconhecido")
-    );
-    return false;
+    console.error("Erro ao salvar online; guardando localmente:", error);
+    const localNote = { ...payload, id: localId, _localOnly: isLocal };
+    const index = notes.findIndex((n) => String(n.id) === String(localId));
+    if (index >= 0) notes[index] = localNote;
+    else notes.push(localNote);
+    queueUpsert(localNote);
+    writeCache();
+    dirty = false;
+    statusEl.textContent = "Salvo neste dispositivo — aguardando internet";
+    render();
+    updateConnectionStatus();
+    return true;
   } finally {
     saveEl.disabled = false;
+  }
+}
+
+function removeQueueForId(id) {
+  const queue = readQueue().filter((item) => {
+    if (item.type === "upsert" && String(item.localId) === String(id)) return false;
+    if (item.type === "delete" && String(item.id) === String(id)) return false;
+    return true;
+  });
+  writeQueue(queue);
+}
+
+async function syncPending() {
+  if (syncing || !navigator.onLine || !hasSupabase()) return;
+  let queue = readQueue();
+  if (!queue.length) {
+    updateConnectionStatus();
+    return;
+  }
+
+  syncing = true;
+  updateConnectionStatus();
+
+  try {
+    // Primeiro sincroniza notas; assim novas notas locais recebem o ID real do Supabase.
+    for (const item of [...queue]) {
+      if (item.type !== "upsert") continue;
+
+      const localNote = normalizeNote(item.note);
+      const isLocal = String(localNote.id).startsWith("local-");
+      let result;
+
+      if (isLocal) {
+        result = await supabaseClient.from("notas").insert({
+          titulo: localNote.titulo,
+          conteudo: localNote.conteudo,
+          cor_nota: localNote.cor_nota,
+          fixada: localNote.fixada,
+          arquivada: localNote.arquivada,
+          etiquetas: localNote.etiquetas,
+          ordem: localNote.ordem,
+          updated_at: localNote.updated_at
+        }).select().single();
+      } else {
+        result = await supabaseClient.from("notas").update({
+          titulo: localNote.titulo,
+          conteudo: localNote.conteudo,
+          cor_nota: localNote.cor_nota,
+          fixada: localNote.fixada,
+          arquivada: localNote.arquivada,
+          etiquetas: localNote.etiquetas,
+          ordem: localNote.ordem,
+          updated_at: localNote.updated_at
+        }).eq("id", localNote.id).select().single();
+      }
+
+      if (result.error) throw result.error;
+
+      const saved = normalizeNote(result.data);
+      notes = notes.map((n) => String(n.id) === String(localNote.id) ? saved : n);
+      queue = queue.filter((q) => !(q.type === "upsert" && String(q.localId) === String(localNote.id)));
+      writeQueue(queue);
+      writeCache();
+    }
+
+    // Depois executa exclusões.
+    for (const item of [...queue]) {
+      if (item.type !== "delete") continue;
+      if (String(item.id).startsWith("local-")) {
+        queue = queue.filter((q) => !(q.type === "delete" && String(q.id) === String(item.id)));
+        writeQueue(queue);
+        continue;
+      }
+      const result = await supabaseClient.from("notas").delete().eq("id", item.id);
+      if (result.error) throw result.error;
+      notes = notes.filter((n) => String(n.id) !== String(item.id));
+      queue = queue.filter((q) => !(q.type === "delete" && String(q.id) === String(item.id)));
+      writeQueue(queue);
+      writeCache();
+    }
+
+    // Por último salva a ordem.
+    const reorder = [...queue].reverse().find((item) => item.type === "reorder");
+    if (reorder) {
+      const ids = reorder.ids.filter((id) => !String(id).startsWith("local-"));
+      for (let i = 0; i < ids.length; i++) {
+        const result = await supabaseClient.from("notas").update({ ordem: i }).eq("id", ids[i]);
+        if (result.error) throw result.error;
+      }
+      queue = queue.filter((item) => item.type !== "reorder");
+      writeQueue(queue);
+    }
+
+    writeCache();
+  } catch (error) {
+    console.error("Sincronização pendente:", error);
+  } finally {
+    syncing = false;
+    updateConnectionStatus();
+    render();
   }
 }
 
@@ -382,28 +670,38 @@ async function deleteNote() {
     closeEditor();
     return;
   }
-
   if (!confirm("Excluir esta nota?")) return;
 
-  const result = await supabaseClient
-    .from("notas")
-    .delete()
-    .eq("id", current.id);
+  const id = current.id;
+  const isLocal = String(id).startsWith("local-");
+  notes = notes.filter((note) => String(note.id) !== String(id));
 
-  if (result.error) {
-    console.error(result.error);
-    alert("Erro ao excluir: " + (result.error.message || ""));
+  if (isLocal || !navigator.onLine || !hasSupabase()) {
+    queueDelete(id);
+    writeCache();
+    closeEditor();
+    render();
+    updateConnectionStatus();
+    if (navigator.onLine) await syncPending();
     return;
   }
 
-  notes = notes.filter((note) => note.id !== current.id);
+  const result = await supabaseClient.from("notas").delete().eq("id", id);
+  if (result.error) {
+    console.error(result.error);
+    queueDelete(id);
+    alert("Não foi possível excluir agora. A exclusão ficou salva e será sincronizada quando a conexão estiver disponível.");
+  } else {
+    removeQueueForId(id);
+  }
+  writeCache();
   closeEditor();
   render();
+  updateConnectionStatus();
 }
 
 async function togglePin() {
   if (!current) return;
-
   current.fixada = !current.fixada;
   pinEl.textContent = current.fixada ? "📌" : "📍";
   dirty = true;
@@ -412,11 +710,9 @@ async function togglePin() {
 
 async function toggleArchive() {
   if (!current) return;
-
   current.arquivada = !current.arquivada;
   archiveEl.textContent = current.arquivada ? "📤" : "📥";
   dirty = true;
-
   const ok = await saveNote();
   if (ok && current && current.arquivada) closeEditor();
 }
@@ -437,5 +733,5 @@ function formatDate(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
+  return date.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
